@@ -32,6 +32,15 @@ void check_and_prioritize_tasks() {
         exit(1);
     }
 
+    void throttle_lower_priority_tasks(uint32_t pid) {
+        struct timespec ts;
+        ts.tv_sec = 5;    // Sleep for 5 seconds
+        ts.tv_nsec = 0;   // No additional nanoseconds
+
+        printf("Throttling task PID=%u with nanosleep for 5 seconds...\n", pid);
+        nanosleep(&ts, NULL);
+    } 
+
     while (1) {
         // Get the current time for real-time latency calculation
         current_time = (uint64_t)time(NULL) * 1000000000ULL; // Convert to nanoseconds
@@ -60,12 +69,12 @@ void check_and_prioritize_tasks() {
                         while (bpf_map_get_next_key(map_fd, &lower_key, &lower_next_key) == 0) {
                             if (bpf_map_lookup_elem(map_fd, &lower_next_key, &lower_task) == 0) {
                                 if (lower_task.priority_class == i && kill(lower_task.pid, 0) == 0) {
-                                    printf("Pausing lower-priority task PID=%u (Priority=%lu)\n",
-                                           lower_task.pid, lower_task.priority_class);
-                                    kill(lower_task.pid, SIGSTOP);
+                                    printf("Throttling lower-priority task PID=%u (Priority=%lu)\n",
+                                       lower_task.pid, lower_task.priority_class);
+                                    throttle_lower_priority_tasks(lower_task.pid);
                                 }
                             }
-                            lower_key = lower_next_key;
+                        lower_key = lower_next_key;
                         }
                     }
 
