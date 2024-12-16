@@ -1,0 +1,2 @@
+libbpf: BTF is required, but is missing or corrupted.
+Error: failed to open object file
